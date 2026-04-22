@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChatGPT風UI</title>
+  <style>
+    :root{
+      --bg:#f7f7f8;
+      --panel:#ffffff;
+      --sidebar:#202123;
+      --sidebar2:#2a2b32;
+      --text:#111827;
+      --muted:#6b7280;
+      --border:#e5e7eb;
+      --accent:#10a37f;
+      --user:#eef2ff;
+      --assistant:#ffffff;
+      --shadow:0 10px 30px rgba(0,0,0,.06);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+    body{display:flex;overflow:hidden}
+
+    .sidebar{
+      width:280px;
+      background:var(--sidebar);
+      color:#fff;
+      display:flex;
+      flex-direction:column;
+      padding:16px;
+      gap:12px;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:700;
+      font-size:16px;
+      padding:10px 12px;
+      border-radius:12px;
+      background:rgba(255,255,255,.06);
+    }
+    .brand-dot{
+      width:12px;height:12px;border-radius:50%;
+      background:var(--accent);
+      box-shadow:0 0 0 4px rgba(16,163,127,.15);
+    }
+    .newchat{
+      border:none;
+      background:#fff;
+      color:#111;
+      padding:12px 14px;
+      border-radius:12px;
+      font-weight:600;
+      cursor:pointer;
+    }
+    .newchat:hover{opacity:.92}
+    .history{
+      flex:1;
+      overflow:auto;
+      padding-right:4px;
+    }
+    .history-item{
+      padding:12px 14px;
+      border-radius:10px;
+      color:#e5e7eb;
+      background:transparent;
+      cursor:pointer;
+      margin-bottom:6px;
+      font-size:14px;
+    }
+    .history-item:hover{background:rgba(255,255,255,.07)}
+    .sidebar-footer{
+      padding:12px 14px;
+      border-radius:12px;
+      background:rgba(255,255,255,.06);
+      color:#d1d5db;
+      font-size:13px;
+      line-height:1.5;
+    }
+
+    .main{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      min-width:0;
+    }
+
+    .topbar{
+      height:64px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 20px;
+      background:rgba(255,255,255,.8);
+      backdrop-filter:blur(10px);
+      border-bottom:1px solid var(--border);
+    }
+    .topbar h1{
+      margin:0;
+      font-size:16px;
+      font-weight:700;
+    }
+    .pill{
+      font-size:13px;
+      color:#374151;
+      background:#fff;
+      border:1px solid var(--border);
+      padding:8px 12px;
+      border-radius:999px;
+    }
+
+    .chat{
+      flex:1;
+      overflow:auto;
+      padding:24px 16px 140px;
+    }
+    .chat-inner{
+      max-width:900px;
+      margin:0 auto;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+
+    .message{
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+    }
+    .avatar{
+      width:36px;height:36px;border-radius:10px;
+      flex:0 0 auto;
+      display:grid;
+      place-items:center;
+      font-weight:700;
+      font-size:14px;
+    }
+    .assistant .avatar{
+      background:rgba(16,163,127,.12);
+      color:var(--accent);
+      border:1px solid rgba(16,163,127,.2);
+    }
+    .user .avatar{
+      background:#e0e7ff;
+      color:#4338ca;
+      border:1px solid #c7d2fe;
+    }
+    .bubble{
+      max-width:min(760px, calc(100vw - 120px));
+      padding:14px 16px;
+      border-radius:16px;
+      box-shadow:var(--shadow);
+      border:1px solid var(--border);
+      line-height:1.7;
+      white-space:pre-wrap;
+      word-break:break-word;
+    }
+    .assistant .bubble{background:var(--assistant)}
+    .user .bubble{background:var(--user)}
+
+    .composer-wrap{
+      position:fixed;
+      left:280px;
+      right:0;
+      bottom:0;
+      padding:18px 16px 20px;
+      background:linear-gradient(to top, rgba(247,247,248,1) 70%, rgba(247,247,248,.85));
+      border-top:1px solid rgba(229,231,235,.7);
+    }
+    .composer{
+      max-width:900px;
+      margin:0 auto;
+      display:flex;
+      gap:10px;
+      align-items:flex-end;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:10px;
+      box-shadow:var(--shadow);
+    }
+    textarea{
+      flex:1;
+      resize:none;
+      border:none;
+      outline:none;
+      font:inherit;
+      line-height:1.6;
+      padding:8px 10px;
+      min-height:24px;
+      max-height:180px;
+      background:transparent;
+    }
+    .send{
+      border:none;
+      background:var(--accent);
+      color:#fff;
+      width:44px;
+      height:44px;
+      border-radius:14px;
+      cursor:pointer;
+      font-size:18px;
+      flex:0 0 auto;
+    }
+    .send:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+    }
+
+    .hint{
+      max-width:900px;
+      margin:8px auto 0;
+      color:var(--muted);
+      font-size:12px;
+      text-align:center;
+    }
+
+    @media (max-width: 860px){
+      .sidebar{display:none}
+      .composer-wrap{left:0}
+      .bubble{max-width:calc(100vw - 92px)}
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      ChatGPT風UI
+    </div>
+    <button class="newchat" id="newChat">+ 新しいチャット</button>
+
+    <div class="history" id="history">
+      <div class="history-item">UX設計の相談</div>
+      <div class="history-item">HTMLで画面を作る</div>
+      <div class="history-item">アイデア整理</div>
+      <div class="history-item">文章のたたき台</div>
+    </div>
+
+    <div class="sidebar-footer">
+      これはデモです。<br />
+      API接続は入っていません。
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <h1>ChatGPT風チャット画面</h1>
+      <div class="pill">Demo</div>
+    </header>
+
+    <section class="chat" id="chat">
+      <div class="chat-inner" id="chatInner">
+        <div class="message assistant">
+          <div class="avatar">AI</div>
+          <div class="bubble">こんにちは。見た目だけはそれっぽいチャット画面です。地味に使えます。</div>
+        </div>
+        <div class="message user">
+          <div class="avatar">Me</div>
+          <div class="bubble">ChatGPTっぽいUIをHTMLで作って。</div>
+        </div>
+        <div class="message assistant">
+          <div class="avatar">AI</div>
+          <div class="bubble">了解。入力欄、送信ボタン、履歴、レスポンシブ対応を入れています。</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="composer-wrap">
+      <div class="composer">
+        <textarea id="input" rows="1" placeholder="メッセージを入力..."></textarea>
+        <button class="send" id="sendBtn" aria-label="送信">➤</button>
+      </div>
+      <div class="hint">Enterで送信、Shift+Enterで改行</div>
+    </div>
+  </main>
+
+  <script>
+    const chatInner = document.getElementById('chatInner');
+    const input = document.getElementById('input');
+    const sendBtn = document.getElementById('sendBtn');
+    const chat = document.getElementById('chat');
+    const newChat = document.getElementById('newChat');
+
+    function scrollToBottom() {
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function resizeTextarea() {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 180) + 'px';
+    }
+
+    function addMessage(role, text) {
+      const message = document.createElement('div');
+      message.className = `message ${role}`;
+
+      const avatar = document.createElement('div');
+      avatar.className = 'avatar';
+      avatar.textContent = role === 'user' ? 'Me' : 'AI';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = text;
+
+      message.appendChild(avatar);
+      message.appendChild(bubble);
+      chatInner.appendChild(message);
+      scrollToBottom();
+    }
+
+    function fakeReply(userText) {
+      const replies = [
+        'なるほど。見た目は大事です。中身がなくても、まず人間は見た目で判断しますから。',
+        'いいですね。次はAPIをつなげれば、ちゃんと会話できる風になります。',
+        'その要件なら、サイドバー、メッセージ一覧、入力欄があれば十分です。',
+        'UIはそれっぽく、処理は軽く。実に健全です。'
+      ];
+      return replies[Math.floor(Math.random() * replies.length)];
+    }
+
+    function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+
+      addMessage('user', text);
+      input.value = '';
+      resizeTextarea();
+      sendBtn.disabled = true;
+
+      setTimeout(() => {
+        addMessage('assistant', fakeReply(text));
+        sendBtn.disabled = false;
+      }, 500);
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+
+    input.addEventListener('input', () => {
+      resizeTextarea();
+      sendBtn.disabled = !input.value.trim();
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    newChat.addEventListener('click', () => {
+      chatInner.innerHTML = '';
+      addMessage('assistant', '新しいチャットを開始しました。人類は毎回ここからやり直します。');
+    });
+
+    resizeTextarea();
+    scrollToBottom();
+  </script>
+</body>
+</html>
