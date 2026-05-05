@@ -3,673 +3,683 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ChatGPT風UI - Streaming版</title>
+  <title>ChatGPT風モック</title>
   <style>
-    :root{
-      --bg:#f7f7f8;
-      --panel:#ffffff;
-      --sidebar:#202123;
-      --sidebar2:#2a2b32;
-      --text:#111827;
-      --muted:#6b7280;
-      --border:#e5e7eb;
-      --accent:#10a37f;
-      --accent-2:#0d8f6f;
-      --user:#eef2ff;
-      --assistant:#ffffff;
-      --shadow:0 10px 30px rgba(0,0,0,.06);
-      --shadow-soft:0 4px 16px rgba(0,0,0,.05);
+    :root {
+      --bg: #0f1115;
+      --panel: #151922;
+      --panel-2: #1b2030;
+      --border: rgba(255,255,255,.08);
+      --text: #e8eaf0;
+      --muted: #9aa3b2;
+      --accent: #10a37f;
+      --accent-2: #2d3748;
+      --user: #243042;
+      --assistant: #171c27;
+      --shadow: 0 20px 60px rgba(0,0,0,.35);
+      --radius: 18px;
     }
 
-    *{box-sizing:border-box}
-    html,body{
-      height:100%;
-      margin:0;
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      background:var(--bg);
-      color:var(--text);
-    }
-    body{
-      display:flex;
-      overflow:hidden;
-    }
-
-    .sidebar{
-      width:280px;
-      background:var(--sidebar);
-      color:#fff;
-      display:flex;
-      flex-direction:column;
-      padding:16px;
-      gap:12px;
-    }
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      font-weight:700;
-      font-size:16px;
-      padding:10px 12px;
-      border-radius:12px;
-      background:rgba(255,255,255,.06);
-    }
-    .brand-dot{
-      width:12px;
-      height:12px;
-      border-radius:50%;
-      background:var(--accent);
-      box-shadow:0 0 0 4px rgba(16,163,127,.15);
-    }
-    .newchat{
-      border:none;
-      background:#fff;
-      color:#111;
-      padding:12px 14px;
-      border-radius:12px;
-      font-weight:600;
-      cursor:pointer;
-      transition:.15s ease;
-    }
-    .newchat:hover{opacity:.92; transform:translateY(-1px)}
-    .history{
-      flex:1;
-      overflow:auto;
-      padding-right:4px;
-    }
-    .history-item{
-      padding:12px 14px;
-      border-radius:10px;
-      color:#e5e7eb;
-      background:transparent;
-      cursor:pointer;
-      margin-bottom:6px;
-      font-size:14px;
-      transition:.15s ease;
-    }
-    .history-item:hover{background:rgba(255,255,255,.07)}
-    .sidebar-footer{
-      padding:12px 14px;
-      border-radius:12px;
-      background:rgba(255,255,255,.06);
-      color:#d1d5db;
-      font-size:13px;
-      line-height:1.5;
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(1200px 700px at 20% -10%, rgba(16,163,127,.16), transparent 50%),
+        radial-gradient(900px 600px at 100% 0%, rgba(59,130,246,.12), transparent 40%),
+        var(--bg);
+      color: var(--text);
+      overflow: hidden;
     }
 
-    .main{
-      flex:1;
-      display:flex;
-      flex-direction:column;
-      min-width:0;
+    .app {
+      height: 100%;
+      display: grid;
+      grid-template-columns: 290px 1fr;
     }
 
-    .topbar{
-      height:64px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:0 20px;
-      background:rgba(255,255,255,.8);
-      backdrop-filter:blur(10px);
-      border-bottom:1px solid var(--border);
-    }
-    .topbar h1{
-      margin:0;
-      font-size:16px;
-      font-weight:700;
-    }
-    .pill{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      font-size:13px;
-      color:#374151;
-      background:#fff;
-      border:1px solid var(--border);
-      padding:8px 12px;
-      border-radius:999px;
-    }
-    .pill-dot{
-      width:8px;
-      height:8px;
-      border-radius:50%;
-      background:var(--accent);
-      box-shadow:0 0 0 3px rgba(16,163,127,.12);
+    .sidebar {
+      background: linear-gradient(180deg, rgba(255,255,255,.02), transparent 24%), var(--panel);
+      border-right: 1px solid var(--border);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 0;
     }
 
-    .chat{
-      flex:1;
-      overflow:auto;
-      padding:24px 16px 140px;
-      scroll-behavior:smooth;
-    }
-    .chat-inner{
-      max-width:900px;
-      margin:0 auto;
-      display:flex;
-      flex-direction:column;
-      gap:14px;
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: rgba(255,255,255,.03);
+      box-shadow: var(--shadow);
     }
 
-    .message{
-      display:flex;
-      gap:12px;
-      align-items:flex-start;
-    }
-    .message.user{
-      flex-direction:row-reverse;
-    }
-    .message.user .bubble-wrap{
-      align-items:flex-end;
+    .brand-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
     }
 
-    .avatar{
-      width:36px;
-      height:36px;
-      border-radius:10px;
-      flex:0 0 auto;
-      overflow:hidden;
-      border:1px solid var(--border);
-      box-shadow:0 4px 14px rgba(0,0,0,.04);
-      background:#fff;
-      display:block;
+    .logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), #39d4ae);
+      box-shadow: 0 10px 30px rgba(16,163,127,.35);
+      position: relative;
+      flex: 0 0 auto;
     }
-    .avatar img{
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      display:block;
-    }
-
-    .bubble-wrap{
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-      min-width:0;
-    }
-    .bubble-meta{
-      font-size:12px;
-      color:var(--muted);
-      padding:0 2px;
-    }
-    .message.user .bubble-meta{
-      text-align:right;
+    .logo::after {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border: 2px solid rgba(255,255,255,.92);
+      border-radius: 999px;
     }
 
-    .bubble{
-      max-width:min(760px, calc(100vw - 120px));
-      padding:14px 16px;
-      border-radius:16px;
-      box-shadow:var(--shadow);
-      border:1px solid var(--border);
-      line-height:1.7;
-      white-space:pre-wrap;
-      word-break:break-word;
-      position:relative;
-    }
-    .assistant .bubble{background:var(--assistant)}
-    .user .bubble{background:var(--user)}
-    .bubble.streaming::after{
-      content:"";
-      display:inline-block;
-      width:8px;
-      height:18px;
-      margin-left:3px;
-      vertical-align:-4px;
-      background:rgba(16,163,127,.7);
-      border-radius:2px;
-      animation:blink 1s steps(1) infinite;
-    }
-    @keyframes blink{
-      50%{opacity:0}
+    .brand h1 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .typing{
-      display:inline-flex;
-      align-items:center;
-      gap:5px;
-      min-height:18px;
-    }
-    .typing span{
-      width:7px;
-      height:7px;
-      border-radius:50%;
-      background:#9ca3af;
-      animation:dot 1.2s infinite ease-in-out;
-    }
-    .typing span:nth-child(2){animation-delay:.15s}
-    .typing span:nth-child(3){animation-delay:.3s}
-    @keyframes dot{
-      0%,80%,100%{transform:translateY(0); opacity:.45}
-      40%{transform:translateY(-4px); opacity:1}
+    .brand p {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: var(--muted);
     }
 
-    .composer-wrap{
-      position:fixed;
-      left:280px;
-      right:0;
-      bottom:0;
-      padding:18px 16px 20px;
-      background:linear-gradient(to top, rgba(247,247,248,1) 70%, rgba(247,247,248,.85));
-      border-top:1px solid rgba(229,231,235,.7);
+    .btn {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: .2s ease;
+      font: inherit;
     }
-    .composer{
-      max-width:900px;
-      margin:0 auto;
-      display:flex;
-      gap:10px;
-      align-items:flex-end;
-      background:#fff;
-      border:1px solid var(--border);
-      border-radius:18px;
-      padding:10px;
-      box-shadow:var(--shadow);
-    }
-    textarea{
-      flex:1;
-      resize:none;
-      border:none;
-      outline:none;
-      font:inherit;
-      line-height:1.6;
-      padding:8px 10px;
-      min-height:24px;
-      max-height:180px;
-      background:transparent;
-    }
-    .send{
-      border:none;
-      background:var(--accent);
-      color:#fff;
-      width:44px;
-      height:44px;
-      border-radius:14px;
-      cursor:pointer;
-      font-size:18px;
-      flex:0 0 auto;
-      transition:.15s ease;
-    }
-    .send:hover{background:var(--accent-2); transform:translateY(-1px)}
-    .send:disabled{
-      opacity:.45;
-      cursor:not-allowed;
-      transform:none;
+    .btn:hover { transform: translateY(-1px); background: rgba(255,255,255,.07); }
+    .btn.primary {
+      background: linear-gradient(135deg, var(--accent), #0c8f6f);
+      border-color: transparent;
+      font-weight: 600;
     }
 
-    .hint{
-      max-width:900px;
-      margin:8px auto 0;
-      color:var(--muted);
-      font-size:12px;
-      text-align:center;
+    .search {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(255,255,255,.03);
+    }
+    .search input {
+      width: 100%;
+      background: transparent;
+      border: 0;
+      outline: 0;
+      color: var(--text);
+      font: inherit;
+    }
+    .search span { color: var(--muted); font-size: 13px; }
+
+    .section-title {
+      margin: 8px 4px 2px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
     }
 
-    .status-line{
-      max-width:900px;
-      margin:0 auto 8px;
-      font-size:12px;
-      color:var(--muted);
-      text-align:center;
-      min-height:18px;
+    .chat-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: auto;
+      padding-right: 2px;
+      flex: 1 1 auto;
     }
 
-    @media (max-width: 860px){
-      .sidebar{display:none}
-      .composer-wrap{left:0}
-      .bubble{max-width:calc(100vw - 92px)}
+    .chat-item {
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      transition: .2s ease;
+    }
+    .chat-item:hover, .chat-item.active {
+      background: rgba(255,255,255,.05);
+      border-color: var(--border);
+    }
+    .chat-item .title { font-size: 14px; margin-bottom: 4px; }
+    .chat-item .meta { font-size: 12px; color: var(--muted); }
+
+    .sidebar-footer {
+      display: grid;
+      gap: 10px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .main {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-width: 0;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15,17,21,.65);
+      backdrop-filter: blur(14px);
+    }
+
+    .topbar .left {
+      min-width: 0;
+    }
+    .topbar .left h2 {
+      margin: 0;
+      font-size: 16px;
+    }
+    .topbar .left p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255,255,255,.03);
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #27c17a;
+      box-shadow: 0 0 0 6px rgba(39,193,122,.12);
+    }
+
+    .chat {
+      overflow: auto;
+      padding: 24px 20px 28px;
+    }
+
+    .messages {
+      max-width: 920px;
+      margin: 0 auto;
+      display: grid;
+      gap: 16px;
+    }
+
+    .message {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+      font-weight: 700;
+      flex: 0 0 auto;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+    }
+    .avatar.user { background: rgba(16,163,127,.12); color: #7ff0d2; }
+    .avatar.bot { background: rgba(255,255,255,.04); color: #d6deea; }
+
+    .bubble {
+      border: 1px solid var(--border);
+      background: var(--assistant);
+      border-radius: 20px;
+      padding: 14px 16px;
+      line-height: 1.65;
+      box-shadow: 0 8px 26px rgba(0,0,0,.18);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .message.user .bubble {
+      background: linear-gradient(180deg, rgba(36,48,66,.96), rgba(30,39,56,.96));
+    }
+
+    .bubble .small {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .composer {
+      padding: 18px 20px 20px;
+      border-top: 1px solid var(--border);
+      background: linear-gradient(180deg, transparent, rgba(255,255,255,.02));
+    }
+
+    .composer-inner {
+      max-width: 920px;
+      margin: 0 auto;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: rgba(21,25,34,.92);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .pill-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .pill:hover { background: rgba(255,255,255,.07); }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    textarea {
+      width: 100%;
+      resize: none;
+      min-height: 54px;
+      max-height: 180px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      outline: none;
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      padding: 14px 16px;
+      font: inherit;
+      line-height: 1.5;
+    }
+    textarea::placeholder { color: #7f8798; }
+
+    .send {
+      min-width: 112px;
+      height: 54px;
+      border-radius: 18px;
+      border: 0;
+      background: linear-gradient(135deg, var(--accent), #0c8f6f);
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 12px 30px rgba(16,163,127,.25);
+      transition: transform .2s ease, filter .2s ease;
+    }
+    .send:hover { transform: translateY(-1px); filter: brightness(1.04); }
+
+    .hint {
+      max-width: 920px;
+      margin: 8px auto 0;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .typing {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      color: var(--muted);
+    }
+    .typing span {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      display: inline-block;
+      animation: bounce 1.2s infinite ease-in-out;
+      opacity: .7;
+    }
+    .typing span:nth-child(2) { animation-delay: .15s; }
+    .typing span:nth-child(3) { animation-delay: .3s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: .5; }
+      40% { transform: translateY(-4px); opacity: 1; }
+    }
+
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      body { overflow: auto; }
+      .main { min-height: 100vh; }
+      .chat { padding: 16px 12px 18px; }
+      .topbar, .composer { padding-left: 12px; padding-right: 12px; }
+      .input-row { grid-template-columns: 1fr; }
+      .send { width: 100%; }
     }
   </style>
 </head>
 <body>
-  <aside class="sidebar">
-    <div class="brand">
-      <span class="brand-dot"></span>
-      ChatGPT風UI
-    </div>
-    <button class="newchat" id="newChat">+ 新しいチャット</button>
-
-    <div class="history" id="history">
-      <div class="history-item">UX設計の相談</div>
-      <div class="history-item">HTMLで画面を作る</div>
-      <div class="history-item">アイデア整理</div>
-      <div class="history-item">文章のたたき台</div>
-    </div>
-
-    <div class="sidebar-footer">
-      これはデモです。<br />
-      API接続は入っていますが、未設定ならローカルで擬似ストリーミングします。
-    </div>
-  </aside>
-
-  <main class="main">
-    <header class="topbar">
-      <h1>ChatGPT風チャット画面</h1>
-      <div class="pill"><span class="pill-dot"></span><span>Streaming Demo</span></div>
-    </header>
-
-    <section class="chat" id="chat">
-      <div class="chat-inner" id="chatInner"></div>
-    </section>
-
-    <div class="composer-wrap">
-      <div class="status-line" id="statusLine"></div>
-      <div class="composer">
-        <textarea id="input" rows="1" placeholder="メッセージを入力..."></textarea>
-        <button class="send" id="sendBtn" aria-label="送信" disabled>➤</button>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-left">
+          <div class="logo" aria-hidden="true"></div>
+          <div>
+            <h1>ChatGPT Mock</h1>
+            <p>それっぽい見た目のやつ</p>
+          </div>
+        </div>
+        <button class="btn" id="themeBtn" title="表示切替">◐</button>
       </div>
-      <div class="hint">Enterで送信、Shift+Enterで改行</div>
-    </div>
-  </main>
+
+      <div class="search">
+        <span>⌕</span>
+        <input id="searchInput" type="text" placeholder="会話を検索" />
+      </div>
+
+      <div class="section-title">Chats</div>
+      <div class="chat-list" id="chatList"></div>
+
+      <div class="sidebar-footer">
+        <button class="btn primary" id="newChatBtn">＋ 新しいチャット</button>
+        <button class="btn">設定</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="left">
+          <h2 id="chatTitle">HTMLでモックアプリを作る話</h2>
+          <p id="chatSub">ChatGPTっぽいUIのダミー会話</p>
+        </div>
+        <div class="status"><span class="dot"></span> Online</div>
+      </header>
+
+      <section class="chat" id="chatArea">
+        <div class="messages" id="messages"></div>
+      </section>
+
+      <footer class="composer">
+        <div class="composer-inner">
+          <div class="toolbar">
+            <div class="pill-row">
+              <button class="pill" data-prompt="このUIをもっとシンプルにして">シンプルに</button>
+              <button class="pill" data-prompt="ダークモードに合う色にして">配色変更</button>
+              <button class="pill" data-prompt="READMEも作って">README</button>
+            </div>
+            <div class="pill-row">
+              <button class="pill" id="clearBtn">履歴を消す</button>
+            </div>
+          </div>
+          <div class="input-row">
+            <textarea id="promptInput" placeholder="メッセージを入力...（Enterで送信 / Shift+Enterで改行）"></textarea>
+            <button class="send" id="sendBtn">送信</button>
+          </div>
+        </div>
+        <div class="hint">これはデモです。実際のAPI接続はしていません。ちゃんと動くのに、本物のAIは住んでいない。潔いですね。</div>
+      </footer>
+    </main>
+  </div>
 
   <script>
-    const chatInner = document.getElementById('chatInner');
-    const input = document.getElementById('input');
+    const chatListEl = document.getElementById('chatList');
+    const messagesEl = document.getElementById('messages');
+    const promptInput = document.getElementById('promptInput');
     const sendBtn = document.getElementById('sendBtn');
-    const chat = document.getElementById('chat');
-    const newChat = document.getElementById('newChat');
-    const statusLine = document.getElementById('statusLine');
+    const clearBtn = document.getElementById('clearBtn');
+    const newChatBtn = document.getElementById('newChatBtn');
+    const themeBtn = document.getElementById('themeBtn');
+    const searchInput = document.getElementById('searchInput');
+    const chatTitle = document.getElementById('chatTitle');
+    const chatSub = document.getElementById('chatSub');
+    const chatArea = document.getElementById('chatArea');
 
-    // 画像は同じフォルダに置くと扱いやすいです。人類は外部URLを信用しすぎるので。
-    const AI_AVATAR_URL = 'https://static.vecteezy.com/system/resources/previews/021/608/790/non_2x/chatgpt-logo-chat-gpt-icon-on-black-background-free-vector.jpg';
-    const USER_AVATAR_URL = 'https://www.hotosena.com/wp-content/uploads/2025/04/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88-752.jpg';
+    const state = {
+      activeChat: 0,
+      chats: [
+        {
+          title: 'HTMLでモックアプリを作る話',
+          meta: '2分前 · 8件のメッセージ',
+          messages: [
+            { role: 'assistant', text: 'ChatGPTっぽい見た目のモックを作るなら、まずレイアウトを分けると雰囲気が出ます。\n左にサイドバー、中央に会話、下に入力欄。人類は枠があると安心するので。' },
+            { role: 'user', text: 'そのままHTMLで動くやつにして' },
+            { role: 'assistant', text: '了解です。単一ファイルにまとめて、スタイルと少しのJavaScriptで会話っぽく見せます。' }
+          ]
+        },
+        {
+          title: 'READMEもつける？',
+          meta: '昨日 · 3件のメッセージ',
+          messages: [
+            { role: 'user', text: 'READMEも欲しい' },
+            { role: 'assistant', text: 'READMEは地味ですが重要です。未来の自分が「これ何だっけ」と途方に暮れる時間を少しだけ減らせます。' }
+          ]
+        },
+        {
+          title: '配色の相談',
+          meta: '3日前 · 5件のメッセージ',
+          messages: [
+            { role: 'assistant', text: '暗色ベースに緑のアクセントは、いかにもそれっぽい落ち着きがあります。謎の信頼感だけは出ます。' }
+          ]
+        }
+      ]
+    };
 
-    // ここを自分のAPIに変えてください。
-    // 例: '/api/chat'
-    // 未設定なら、ローカルで擬似ストリーミング返信します。
-    const API_URL = '/api/chat';
-
-    let chatCount = 0;
-    let activeAssistantMessageEl = null;
-    let activeAssistantBubbleEl = null;
-    let currentAbortController = null;
-
-    function scrollToBottom() {
-      chat.scrollTop = chat.scrollHeight;
+    function renderChats(filter = '') {
+      chatListEl.innerHTML = '';
+      state.chats
+        .map((chat, index) => ({ chat, index }))
+        .filter(({ chat }) => chat.title.toLowerCase().includes(filter.toLowerCase()) || chat.meta.toLowerCase().includes(filter.toLowerCase()))
+        .forEach(({ chat, index }) => {
+          const button = document.createElement('button');
+          button.className = 'chat-item' + (index === state.activeChat ? ' active' : '');
+          button.innerHTML = `<div class="title">${escapeHtml(chat.title)}</div><div class="meta">${escapeHtml(chat.meta)}</div>`;
+          button.addEventListener('click', () => {
+            state.activeChat = index;
+            syncActiveChat();
+          });
+          chatListEl.appendChild(button);
+        });
     }
 
-    function resizeTextarea() {
-      input.style.height = 'auto';
-      input.style.height = Math.min(input.scrollHeight, 180) + 'px';
+    function renderMessages() {
+      const chat = state.chats[state.activeChat];
+      messagesEl.innerHTML = '';
+      chat.messages.forEach((msg) => messagesEl.appendChild(createMessage(msg)));
+      scrollToBottom();
     }
 
-    function setStatus(text) {
-      statusLine.textContent = text || '';
-    }
+    function createMessage(msg) {
+      const row = document.createElement('div');
+      row.className = 'message ' + msg.role;
 
-    function formatTime(date = new Date()) {
-      return new Intl.DateTimeFormat('ja-JP', {
-        hour: '2-digit',
-        minute: '2-digit'
-      }).format(date);
-    }
-
-    function createAvatar(role) {
       const avatar = document.createElement('div');
-      avatar.className = 'avatar';
-
-      const img = document.createElement('img');
-      img.alt = role === 'user' ? 'ユーザーアバター' : 'AIアバター';
-      img.src = role === 'user' ? USER_AVATAR_URL : AI_AVATAR_URL;
-
-      img.onerror = () => {
-        avatar.innerHTML = '';
-        avatar.style.display = 'grid';
-        avatar.style.placeItems = 'center';
-        avatar.style.fontWeight = '700';
-        avatar.style.fontSize = '12px';
-        avatar.style.color = role === 'user' ? '#4338ca' : '#10a37f';
-        avatar.style.background = role === 'user' ? '#e0e7ff' : 'rgba(16,163,127,.12)';
-        avatar.textContent = role === 'user' ? 'Me' : 'AI';
-      };
-
-      avatar.appendChild(img);
-      return avatar;
-    }
-
-    function createMessageElement(role, text = '', options = {}) {
-      const { streaming = false, typing = false, time = formatTime() } = options;
-
-      const message = document.createElement('div');
-      message.className = `message ${role}`;
-
-      const avatar = createAvatar(role);
-
-      const bubbleWrap = document.createElement('div');
-      bubbleWrap.className = 'bubble-wrap';
-
-      const meta = document.createElement('div');
-      meta.className = 'bubble-meta';
-      meta.textContent = role === 'user' ? `あなた · ${time}` : `AI · ${time}`;
+      avatar.className = 'avatar ' + (msg.role === 'user' ? 'user' : 'bot');
+      avatar.textContent = msg.role === 'user' ? 'U' : 'G';
 
       const bubble = document.createElement('div');
       bubble.className = 'bubble';
+      bubble.textContent = msg.text;
 
-      if (typing) {
-        bubble.innerHTML = `
-          <span class="typing" aria-label="入力中">
-            <span></span><span></span><span></span>
-          </span>
-        `;
-      } else {
-        bubble.textContent = text;
-      }
-
-      if (streaming) bubble.classList.add('streaming');
-
-      bubbleWrap.appendChild(meta);
-      bubbleWrap.appendChild(bubble);
-
-      if (role === 'user') {
-        message.appendChild(bubbleWrap);
-        message.appendChild(avatar);
-      } else {
-        message.appendChild(avatar);
-        message.appendChild(bubbleWrap);
-      }
-
-      chatInner.appendChild(message);
-      scrollToBottom();
-      return { message, avatar, bubbleWrap, bubble, meta };
+      row.appendChild(avatar);
+      row.appendChild(bubble);
+      return row;
     }
 
-    function addMessage(role, text, options = {}) {
-      return createMessageElement(role, text, options);
+    function scrollToBottom() {
+      chatArea.scrollTop = chatArea.scrollHeight;
     }
 
-    function addTypingMessage() {
-      return createMessageElement('assistant', '', { typing: true });
+    function syncActiveChat() {
+      const chat = state.chats[state.activeChat];
+      chatTitle.textContent = chat.title;
+      chatSub.textContent = chat.meta;
+      renderChats(searchInput.value);
+      renderMessages();
     }
 
-    function removeElement(el) {
-      if (el && el.parentNode) el.parentNode.removeChild(el);
+    function addMessage(role, text) {
+      state.chats[state.activeChat].messages.push({ role, text });
+      state.chats[state.activeChat].meta = `たった今 · ${state.chats[state.activeChat].messages.length}件のメッセージ`;
+      renderChats(searchInput.value);
+      renderMessages();
     }
 
-    function setBubbleText(bubbleEl, text) {
-      bubbleEl.textContent = text;
-      bubbleEl.classList.add('streaming');
-      scrollToBottom();
-    }
-
-    function appendBubbleText(bubbleEl, text) {
-      bubbleEl.textContent += text;
-      bubbleEl.classList.add('streaming');
-      scrollToBottom();
-    }
-
-    function finalizeBubble(bubbleEl) {
-      bubbleEl.classList.remove('streaming');
-    }
-
-    function fakeReply(userText) {
-      const pool = [
-        'なるほど。見た目は大事です。中身がなくても、まず人間は見た目で判断しますから。',
-        'いいですね。次はAPIをつなげれば、ちゃんと会話できる風になります。',
-        'その要件なら、サイドバー、メッセージ一覧、入力欄があれば十分です。',
-        'UIはそれっぽく、処理は軽く。実に健全です。',
-        'ストリーミングは「少しずつ表示される」だけで、体験がかなり良くなります。人間は待たされるのが嫌いなので。'
-      ];
-      const base = pool[Math.floor(Math.random() * pool.length)];
-      return `${base}\n\n受け取った内容: ${userText}`;
-    }
-
-    function streamTextToBubble(text, bubbleEl, onDone) {
-      let i = 0;
-      const speed = Math.max(12, Math.min(28, Math.floor(220 / Math.max(text.length / 4, 1))));
-      const timer = setInterval(() => {
-        const chunk = text[i];
-        if (typeof chunk === 'undefined') {
-          clearInterval(timer);
-          finalizeBubble(bubbleEl);
-          if (typeof onDone === 'function') onDone();
-          return;
-        }
-        appendBubbleText(bubbleEl, chunk);
-        i += 1;
-      }, speed);
-
-      return () => clearInterval(timer);
-    }
-
-    async function streamFromApi(userText, assistantBubbleEl) {
-      const controller = new AbortController();
-      currentAbortController = controller;
-
-      try {
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            message: userText,
-            stream: true
-          }),
-          signal: controller.signal
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        if (!response.body) {
-          throw new Error('ReadableStreamが利用できません');
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder('utf-8');
-        let accumulated = '';
-
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          accumulated += chunk;
-          setBubbleText(assistantBubbleEl, accumulated);
-        }
-
-        finalizeBubble(assistantBubbleEl);
-      } catch (error) {
-        if (controller.signal.aborted) {
-          setStatus('応答を中断しました');
-          return;
-        }
-        throw error;
-      } finally {
-        currentAbortController = null;
-      }
-    }
-
-    async function sendMessage() {
-      const text = input.value.trim();
+    function sendMessage() {
+      const text = promptInput.value.trim();
       if (!text) return;
-
-      if (currentAbortController) {
-        currentAbortController.abort();
-      }
-
       addMessage('user', text);
-      input.value = '';
-      resizeTextarea();
-      sendBtn.disabled = true;
+      promptInput.value = '';
+      promptInput.style.height = 'auto';
 
-      setStatus('応答を生成中...');
-      chatCount += 1;
+      const typing = document.createElement('div');
+      typing.className = 'message assistant';
+      typing.id = 'typingIndicator';
+      typing.innerHTML = `
+        <div class="avatar bot">G</div>
+        <div class="bubble"><span class="typing"><span></span><span></span><span></span> 考えています</span></div>
+      `;
+      messagesEl.appendChild(typing);
+      scrollToBottom();
 
-      const typingEl = addTypingMessage();
-      const userText = text;
-
-      setTimeout(async () => {
-        removeElement(typingEl.message);
-
-        const assistantMsg = addMessage('assistant', '', { streaming: true });
-        activeAssistantMessageEl = assistantMsg.message;
-        activeAssistantBubbleEl = assistantMsg.bubble;
-
-        try {
-          // API_URL が空文字ならローカル擬似ストリーミング
-          if (!API_URL || API_URL === '/api/chat') {
-            // まずは実APIを試し、失敗したらローカルにフォールバック
-            try {
-              await streamFromApi(userText, assistantMsg.bubble);
-              setStatus('');
-              sendBtn.disabled = !input.value.trim();
-              return;
-            } catch (apiError) {
-              const fallbackText = fakeReply(userText);
-              streamTextToBubble(fallbackText, assistantMsg.bubble, () => {
-                setStatus('');
-                sendBtn.disabled = !input.value.trim();
-              });
-              return;
-            }
-          }
-
-          const fallbackText = fakeReply(userText);
-          streamTextToBubble(fallbackText, assistantMsg.bubble, () => {
-            setStatus('');
-            sendBtn.disabled = !input.value.trim();
-          });
-        } catch (err) {
-          assistantMsg.bubble.textContent = 'エラーが発生しました。API接続を確認してください。';
-          finalizeBubble(assistantMsg.bubble);
-          setStatus('送信に失敗しました');
-          sendBtn.disabled = !input.value.trim();
-        }
-      }, 500);
+      setTimeout(() => {
+        const el = document.getElementById('typingIndicator');
+        if (el) el.remove();
+        addMessage('assistant', fakeReply(text));
+      }, 700);
     }
 
-    sendBtn.addEventListener('click', sendMessage);
+    function fakeReply(text) {
+      const t = text.toLowerCase();
+      if (t.includes('readme')) return 'READMEを足すのは正解です。導入方法、ファイル構成、使い方、カスタマイズ例があると、それだけで完成度が上がります。';
+      if (t.includes('色') || t.includes('配色') || t.includes('theme')) return '配色はダーク基調のまま、アクセントだけ少し変えると ChatGPT っぽさを残しやすいです。緑、青、紫あたりが無難です。';
+      if (t.includes('シンプル')) return '余計な線や装飾を減らして、余白を増やすと一気にそれっぽくなります。見た目がうるさいUIは、だいたい人間の不安の産物です。';
+      return '単一HTMLで動くようにしてあるので、あとは会話保存やテーマ切替を足すだけでそれなりに見えます。';
+    }
 
-    input.addEventListener('input', () => {
-      resizeTextarea();
-      sendBtn.disabled = !input.value.trim();
+    function escapeHtml(str) {
+      return str.replace(/[&<>"]+/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
+    }
+
+    promptInput.addEventListener('input', () => {
+      promptInput.style.height = 'auto';
+      promptInput.style.height = Math.min(promptInput.scrollHeight, 180) + 'px';
     });
 
-    input.addEventListener('keydown', (e) => {
+    promptInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendMessage();
       }
     });
 
-    newChat.addEventListener('click', () => {
-      if (currentAbortController) currentAbortController.abort();
-      chatInner.innerHTML = '';
-      addMessage('assistant', '新しいチャットを開始しました。人類は毎回ここからやり直します。');
-      setStatus('');
-      sendBtn.disabled = !input.value.trim();
-      activeAssistantMessageEl = null;
-      activeAssistantBubbleEl = null;
+    sendBtn.addEventListener('click', sendMessage);
+
+    clearBtn.addEventListener('click', () => {
+      state.chats[state.activeChat].messages = [
+        { role: 'assistant', text: '履歴を消しました。空白は時々、最も正直なUIです。' }
+      ];
+      state.chats[state.activeChat].meta = 'たった今 · 1件のメッセージ';
+      syncActiveChat();
     });
 
-    // 初期メッセージ
-    addMessage('assistant', 'こんにちは。アバター画像つきのチャット画面です。');
-    addMessage('user', 'ストリーミング応答を追加したい。');
-    addMessage('assistant', '了解。少しずつ返す版にしてあります。APIが未接続なら擬似ストリーミングで動きます。');
+    newChatBtn.addEventListener('click', () => {
+      const id = state.chats.length + 1;
+      state.chats.unshift({
+        title: `新しいチャット ${id}`,
+        meta: '今 · 0件のメッセージ',
+        messages: [
+          { role: 'assistant', text: '新しい会話を始めました。無から始めるのは気分がいいですね。' }
+        ]
+      });
+      state.activeChat = 0;
+      syncActiveChat();
+    });
 
-    resizeTextarea();
-    scrollToBottom();
+    themeBtn.addEventListener('click', () => {
+      const current = document.body.dataset.theme || 'dark';
+      if (current === 'dark') {
+        document.body.dataset.theme = 'light';
+        document.documentElement.style.setProperty('--bg', '#eef2f7');
+        document.documentElement.style.setProperty('--panel', '#f7f9fc');
+        document.documentElement.style.setProperty('--panel-2', '#ffffff');
+        document.documentElement.style.setProperty('--border', 'rgba(15,23,42,.10)');
+        document.documentElement.style.setProperty('--text', '#111827');
+        document.documentElement.style.setProperty('--muted', '#556173');
+        document.documentElement.style.setProperty('--assistant', '#ffffff');
+        document.documentElement.style.setProperty('--user', '#e8eef8');
+        document.documentElement.style.setProperty('--accent-2', '#d7dee9');
+        themeBtn.textContent = '☾';
+      } else {
+        document.body.dataset.theme = 'dark';
+        document.documentElement.style.setProperty('--bg', '#0f1115');
+        document.documentElement.style.setProperty('--panel', '#151922');
+        document.documentElement.style.setProperty('--panel-2', '#1b2030');
+        document.documentElement.style.setProperty('--border', 'rgba(255,255,255,.08)');
+        document.documentElement.style.setProperty('--text', '#e8eaf0');
+        document.documentElement.style.setProperty('--muted', '#9aa3b2');
+        document.documentElement.style.setProperty('--assistant', '#171c27');
+        document.documentElement.style.setProperty('--user', '#243042');
+        document.documentElement.style.setProperty('--accent-2', '#2d3748');
+        themeBtn.textContent = '◐';
+      }
+    });
+
+    document.querySelectorAll('.pill[data-prompt]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        promptInput.value = btn.dataset.prompt;
+        promptInput.focus();
+        promptInput.dispatchEvent(new Event('input'));
+      });
+    });
+
+    searchInput.addEventListener('input', () => renderChats(searchInput.value));
+
+    syncActiveChat();
   </script>
 </body>
 </html>
